@@ -8,7 +8,7 @@ products__code,products__brands,products__product_name,products__nova_group,prod
 8901719121661,Parle,2020 blue,,unknown,,,,,,,https://in.openfoodfacts.org/product/8901719121661
 8901063016682,Britannia,50-50,,unknown,,,,,,,https://in.openfoodfacts.org/product/8901063016682
 8906009072784,Unibic,Biscott,,unknown,,,,,,,https://in.openfoodfacts.org/product/8906009072784
-8901063162600,Britannia,Marie Gold,,e,445,10.6,5.1,790,42,,https://in.openfoodfacts.org/product/8901063162600
+8901063162600,Britannia,Marie Gold,,e,445,10.6,5.1,,42,,https://in.openfoodfacts.org/product/8901063162600
 8901063139374,Britannia,Bourbon,4,e,493.5,20.3,10.1,0.2975,37,35.1,https://in.openfoodfacts.org/product/8901063139374
 7622201756697,Cadbury,Oreo,4,unknown,483,19.6,9.7,0.42,38.8,,https://in.openfoodfacts.org/product/7622201756697
 8902041020431,Pickwick ,Creamy Wafer Biscuits,,unknown,,,,,,,https://in.openfoodfacts.org/product/8902041020431
@@ -22,7 +22,7 @@ products__code,products__brands,products__product_name,products__nova_group,prod
 8901063035102,Britannia,Milk Bikis,,unknown,,,,,,,https://in.openfoodfacts.org/product/8901063035102
 8901063017795,Britannia,5050 Golmaal,,unknown,15.5,11.5,1.84,0,0,,https://in.openfoodfacts.org/product/8901063017795
 8906001385295,Cremica,Kaju Khajoor Cookies,4,e,478,19.6,9.7,0.9375,25,24,https://in.openfoodfacts.org/product/8906001385295
-8901719123429,Parle,Fab! Bourbon,4,e,472,16.7,8.2,255,41.9,41.7,https://in.openfoodfacts.org/product/8901719123429
+8901719123429,Parle,Fab! Bourbon,4,e,472,16.7,8.2,0.25,41.9,41.7,https://in.openfoodfacts.org/product/8901719123429
 8901063142015,Britannia ,Digestive Nutri Choice,4,d,481,20.9,10.4,0,13.1,,https://in.openfoodfacts.org/product/8901063142015
 8901719123788,Parle,Parle manaco 250g,,unknown,,,,,,,https://in.openfoodfacts.org/product/8901719123788
 8901928272703,Bisk Farm,BISK FARM Chatpata,,unknown,,,,,,,https://in.openfoodfacts.org/product/8901928272703
@@ -102,7 +102,7 @@ products__code,products__brands,products__product_name,products__nova_group,prod
 8901063093287,Britannia,Good Day Cashew Cookies,4,e,504,24,11,0,22,,https://in.openfoodfacts.org/product/8901063093287
 8901063012547,Britannia,Milk bikis,4,unknown,,,,,,,https://in.openfoodfacts.org/product/8901063012547
 8901063017559,Britannia,Britannia 5050 Potazos,4,unknown,,,,,,,https://in.openfoodfacts.org/product/8901063017559
-8901719123894,Parle,Parle -G (800g),,e,454,13,6,740,25.5,,https://in.openfoodfacts.org/product/8901719123894
+8901719123894,Parle,Parle -G (800g),,e,454,13,6,0.74,25.5,,https://in.openfoodfacts.org/product/8901719123894
 8901063142305,Britannia,Nutri Choice,3,e,485,21,10.2,1.1575,14.4,,https://in.openfoodfacts.org/product/8901063142305
 8906009075068,Unibic,Atta Marie Thinz,4,d,444,11.8,6.1,0.85,20,,https://in.openfoodfacts.org/product/8906009075068
 8901063035027,Britannia,Milk Bikis,,e,498,22,13,0,31.5,,https://in.openfoodfacts.org/product/8901063035027
@@ -167,7 +167,7 @@ products__code,products__brands,products__product_name,products__nova_group,prod
 8906009078670,Unibic,Unibic Frunit and Nut cookies,4,e,458,20,9,0.5225,25,,https://in.openfoodfacts.org/product/8906009078670
 8901063012530,Britannia,Milk Bikis,4,e,459,13.5,6.5,0.76,26.4,,https://in.openfoodfacts.org/product/8901063012530
 7622201756789,Oreo,Oreo Strawberry Biscuit,4,e,483,19.7,9.8,1.05,38.3,,https://in.openfoodfacts.org/product/7622201756789
-7622201432263,Cadbury,Oreo Cricket Edition,,e,599,38,9.8,1.05,38,,https://in.openfoodfacts.org/product/7622201432263
+7622201432263,Cadbury,Oreo Cricket Edition,,e,599,19.7,9.8,1.05,38,37.9,https://in.openfoodfacts.org/product/7622201432263
 7610827760259,Fine Food,Cantucci Toscani - Fine food,4,d,471,18,3.5,0.775,24,,https://in.openfoodfacts.org/product/7610827760259
 8901063136434,Britannia,Milk Bikis,,e,428.57,14.29,7.14,0.76,25,,https://in.openfoodfacts.org/product/8901063136434
 7622201432249,Cadbury,Oreo chocolatey sandwich biscuits,,unknown,483,19.7,9.8,1.05,38,,https://in.openfoodfacts.org/product/7622201432249
@@ -184,19 +184,17 @@ products__code,products__brands,products__product_name,products__nova_group,prod
 7622201442071,Cadbury,Chocobakes Choc layered Cakes,4,e,465,21.9,14.1,0.56,41.1,,https://in.openfoodfacts.org/product/7622201442071
 8901725133979,Sunfeast,"Sunfeast Dark Fantasy Bourbon, Classic Biscuit",4,unknown,,,,,,,https://in.openfoodfacts.org/product/8901725133979
 8901123005380,Lotte,Lotte Choco Pie,4,e,441,17,12,0.535,34,25,https://in.openfoodfacts.org/product/8901123005380
-8901063017481,Britannia,50-50 Maska Chaska,4,e,502,26,13,2.705,7.5,,https://in.openfoodfacts.org/product/8901063017481
+8901063017481,Britannia,50-50 Maska Chaska,4,e,502,26,13,2.705,10,7.5,https://in.openfoodfacts.org/product/8901063017481
 8901725116071,Sunfeast,All Rounder,4,d,471,19.5,9.6,0,15.4,,https://in.openfoodfacts.org/product/8901725116071
 8906032341093,Milk Ma,Butter cookies,,b,362,16,0,0.5175,1.14,,https://in.openfoodfacts.org/product/8906032341093
 8906032341086,Milk Ma,Cashew biscuits,4,b,362,16,0,0.5175,1.14,,https://in.openfoodfacts.org/product/8906032341086
 8908002026467,BTW,Jeera Special,4,e,494,28.08,13.47,0.8945118,7.8,,https://in.openfoodfacts.org/product/8908002026467
-622201428501,Oreo,Oreo Original chocolate sandwich biscuits,,e,483,19.6,9.7,1050,38.8,,https://in.openfoodfacts.org/product/622201428501
 8901719100956,Parle-G,Parle G,,d,454,13,6,0,25,,https://in.openfoodfacts.org/product/8901719100956
 8906009077277,Unibic,Butter cookies,4,d,505,24,15.4,0,0,,https://in.openfoodfacts.org/product/8906009077277
 8901725113520,Sunfeast,Glucose Biscuits,4,unknown,449,12.9,6.1,,29.2,,https://in.openfoodfacts.org/product/8901725113520
 8901719117251,Parle,Rusk Real Premium Elaichi,4,unknown,,9.1,,,25.1,,https://in.openfoodfacts.org/product/8901719117251
 8901719101311,Parle,Magix,4,unknown,477,17.6,1.3728,,25.8,,https://in.openfoodfacts.org/product/8901719101311
 8901725134310,Sunfeast,"Sunfeast Nice, 75 g",4,unknown,,,,,,,https://in.openfoodfacts.org/product/8901725134310
-8908002180367,kashmir walnut group,Tim tim walnut,,unknown,687,,,,,,https://in.openfoodfacts.org/product/8908002180367
 8901719117312,Parle,Parle-G Original Gluco Biscuits,4,d,454,13,6,0.75184,25.5,,https://in.openfoodfacts.org/product/8901719117312
 9908463001088,BRITANNIA,Nutri Choice,,unknown,,,,,,,https://in.openfoodfacts.org/product/9908463001088
 8901063162297,Britannia Industries Ltd,marie gold,,unknown,,,,,,,https://in.openfoodfacts.org/product/8901063162297
@@ -212,16 +210,16 @@ products__code,products__brands,products__product_name,products__nova_group,prod
 8902268002326,Anmol,Dream LITE,4,unknown,502,24,11.5,,8,,https://in.openfoodfacts.org/product/8902268002326
 8902268002753,Anmol,Yummy Orange Flavoured Sandwich,4,unknown,480,17.63,10.17,,24.08,,https://in.openfoodfacts.org/product/8902268002753
 8901725134723,Sunfeast,Bounce Choco Twist,4,unknown,467,15.9,7.8,,36.9,,https://in.openfoodfacts.org/product/8901725134723
-8901719103520,"Parle,Monaco",Cheeselings - Classic,,unknown,,20,9.5,2.8,3.3,,https://in.openfoodfacts.org/product/8901719103520
+8901719103520,"Parle,Monaco",Cheeselings - Classic,4,unknown,489,20,9.5,,3.3,,https://in.openfoodfacts.org/product/8901719103520
 8901233030272,Cadbury,Perk,4,e,517,25.8,23.4,0.23368,45.9,,https://in.openfoodfacts.org/product/8901233030272
 8901063004122,Britannia,GoodDay Choco Chip,4,unknown,493,21,7.5,,30,,https://in.openfoodfacts.org/product/8901063004122
 831730007065,Pran,Dry Cake,3,c,420,21,1,0.0125,25,,https://in.openfoodfacts.org/product/831730007065
-8906033745050,McVities,Mcvities Butter Cookie 68 GR.,4,e,469,18.2,8,3,24.9,,https://in.openfoodfacts.org/product/8906033745050
+8906033745050,McVities,Mcvities Butter Cookie 68 GR.,4,e,469,18.2,8,0.75,24.9,,https://in.openfoodfacts.org/product/8906033745050
 8901725114848,Sunfeast,Marie light,,unknown,,,,,,,https://in.openfoodfacts.org/product/8901725114848
 8904109469152,Patanjali,Doodh Biscuits,,unknown,465,17.8,9,0,20.4,,https://in.openfoodfacts.org/product/8904109469152
 8901063139190,Britannia,Bourbon,,e,488,20,10,0,37.5,,https://in.openfoodfacts.org/product/8901063139190
 8901233022536,Cadbury,Bournvita biscuit,,unknown,457,15.3,6.8,0.9025,30,,https://in.openfoodfacts.org/product/8901233022536
-8906074821461,Karachi Bakery,Bitterly Osmania Biscuits,3,e,546,32,16,1.70434,8,,https://in.openfoodfacts.org/product/8906074821461
+8906074821461,Karachi Bakery,Butterly Osmania Biscuits,3,e,546,32,16,1.678,8,,https://in.openfoodfacts.org/product/8906074821461
 8901233027555,Cadbury,Cadbury Choco Creme Oreo,4,e,480,19.7,9.8,1.26492,37.8,,https://in.openfoodfacts.org/product/8901233027555
 3948719100369,Parle,Hide And Seek,4,unknown,479,0.4,,,,,https://in.openfoodfacts.org/product/3948719100369
 8901928014006,Bisk Farm,Marie biscuits,4,unknown,413,13.01,6.2,,18.73,,https://in.openfoodfacts.org/product/8901928014006
