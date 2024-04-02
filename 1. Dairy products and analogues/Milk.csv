@@ -21,8 +21,8 @@ barcode,product_name,brands,quantity,calcium_100g,proteins_100g,fat_100g,saturat
 8901262260152,Slim 'n' Trim,Amul,500ml,0.12,3.2,1.5,1,5,5,0.105,,1,b,https://in.openfoodfacts.org/product/8901262260152
 8901262150217,Taaza,Amul,500ml,0.11,3,3,2,4.8,4.8,0.0925,0.01,1,b,https://in.openfoodfacts.org/product/8901262150217
 8901648923039,Super T Milk,Mother Dairy,1L,0.109,3.1,4.6,3.2,4.8,4.8,0.1375,0.0083,1,c,https://in.openfoodfacts.org/product/8901648923039
-8906024480878,CowMilk,Doodla,500ml,0.11,3.1,3.5,2.1,4.8,4.8,0.1,0.01,1,b,https://in.openfoodfacts.org/product/8906024480878
-8906024480328,Toned Milk,Doodla,,0.11,3.1,3,1.8,4.8,4.8,0.1,0.01,1,b,https://in.openfoodfacts.org/product/8906024480328
+8906024480878,Cow Milk,Dodla,500ml,0.11,3.1,3.5,2.1,4.8,4.8,0.1,0.01,1,b,https://in.openfoodfacts.org/product/8906024480878
+8906024480328,Toned Milk,Dodla,,0.11,3.1,3,1.8,4.8,4.8,0.1,0.01,1,b,https://in.openfoodfacts.org/product/8906024480328
 8901262260114,Gold Milky Milk,Amul,,0.12,3.2,6,3.8,5,5,0.105,0.016,1,c,https://in.openfoodfacts.org/product/8901262260114
 8906036675248,Double Toned Milk,Nandini,,0.127,3.5,1.3,0.8,5.1,5.1,0.125,0.0039,1,a,https://in.openfoodfacts.org/product/8906036675248
 8906036672995,Nandini Slim UHT Sterilised Skimmed Milk,Nandini,500 ml,0.124,3.5,0.1,0,5.1,5.1,0.125,,1,a,https://in.openfoodfacts.org/product/8906036672995
