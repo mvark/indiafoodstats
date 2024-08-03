@@ -8,8 +8,8 @@ code,product_name,brands,quantity_gms,energy-kcal_100g,carbohydrates_100g,sugars
 8904335600671,Peanut butter,Yoga Bar,,632,14,0.5,0,0,50.4,12,30.6,6.2,,unknown,https://in.openfoodfacts.org/product/8904335600671
 8906127550140,Peanut Butter,Alpino,400,625,18,3,,0.0625,49,12,30,6,,d,https://in.openfoodfacts.org/product/8906127550140
 8906143890053,Unsweetened Peanut Butter,The Whole Truth,,651,17.7,3.43,0,0.065,53.4,5.14,25.1,8.57,1,a,https://in.openfoodfacts.org/product/8906143890053
-8906069403306,VEEBA PEANUT BUTTER UNSWEETENED,VEEBA,,652,18,4,,0.075,52,10.4,28,,1,c,https://in.openfoodfacts.org/product/8906069403306
-8906127550003,Peanut butter,Alpino,1000,606,21.9,3.12,,0.0625,46.9,9.38,31.2,9.38,,d,https://in.openfoodfacts.org/product/8906127550003
+8906069403306,VEEBA PEANUT BUTTER UNSWEETENED,VEEBA,,652,18,4,0,0.075,52,10.4,28,,1,c,https://in.openfoodfacts.org/product/8906069403306
+8906127550003,Peanut butter,Alpino,1000,606,21.9,3.12,0,0.0625,46.9,9.38,31.2,9.38,,d,https://in.openfoodfacts.org/product/8906127550003
 8901262010504,Peanut Spread Crunchy,Amul,300,,,,,,,,,,,unknown,https://in.openfoodfacts.org/product/8901262010504
 8908010900384,Pintola Peanut Butter,Pintola,1000,639,18,3,0,0.0475,49,7,30,9,1,a,https://in.openfoodfacts.org/product/8908010900384
 8901512141804,peanut butter,Sundrop,200,,,,,,,,,,,unknown,https://in.openfoodfacts.org/product/8901512141804
@@ -44,7 +44,7 @@ code,product_name,brands,quantity_gms,energy-kcal_100g,carbohydrates_100g,sugars
 8905507002729,Peanut butter Crunchy,First Crop,,,,,,,,,,,,unknown,https://in.openfoodfacts.org/product/8905507002729
 8906002006083,Funfoods Peanut Butter Crunchy,Dr. Oetker Funfoods,125,636.4,20.3,7.7,,0.864,50.3,10.1,25.6,,3,d,https://in.openfoodfacts.org/product/8906002006083
 8901030857973,Kissan peanut butter,Kissan,350,627,20.7,10.7,,0.672,49.3,9.33,25.7,8.67,3,c,https://in.openfoodfacts.org/product/8901030857973
-8904327600450,Peanut Butter,MYFITNESS,1250,625,19,10,7,0.875,50,10,26,5,4,c,https://in.openfoodfacts.org/product/8904327600450
+8904327600450,Peanut Butter,MYFITNESS,1250,625,19,10,0,0.875,50,10,26,5,4,c,https://in.openfoodfacts.org/product/8904327600450
 8906069401210,Peanut butter,Veeba,925,630.78,18.8,7.89,,0.914775,50.02,3.41,26.35,,4,c,https://in.openfoodfacts.org/product/8906069401210
 8906002004447,FUNFOODS PEANUT BUTTER,Dr. Oetker Funfoods,925,641.5,19.3,7.5,,,51,10.4,26.3,,4,unknown,https://in.openfoodfacts.org/product/8906002004447
 8904327600399,Myfitness Peanut butter,MYFITNESS,510,625,19,10,7,0.875,50,10,26,5,4,d,https://in.openfoodfacts.org/product/8904327600399
