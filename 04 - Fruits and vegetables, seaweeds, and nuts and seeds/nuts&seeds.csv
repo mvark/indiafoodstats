@@ -1,4 +1,4 @@
-code,product_name,brands,quantity_gms,energy-kcal_100g,carbohydrates_100g,sugars_100g,salt_100g,fat_100g,saturated-fat_100g,proteins_100g,fiber_100g,potassium_100g,calcium_100g,nova_group,nutriscore_grade,OFF_URL
+barcode,product_name,brands,quantity_gms,energy-kcal_100g,carbohydrates_100g,sugars_100g,salt_100g,fat_100g,saturated-fat_100g,proteins_100g,fiber_100g,potassium_100g,calcium_100g,nova_group,nutriscore_grade,OFF_URL
 8906005670427,Salted Peanuts,Charliee,,,,,,,,,,,,,unknown,https://in.openfoodfacts.org/product/8906005670427
 8908005072690,Chia Seeds,Delight nuts,200,519,34.9,0.1,0.1675,31.87,3.63,23.23,30,0.678,0.425,1,a,https://in.openfoodfacts.org/product/8908005072690
 8908000385351,Masala peanut,Dev,150,630,20,8.4,1.1,48.5,7.2,27.6,6.8,0.64,0.11,1,d,https://in.openfoodfacts.org/product/8908000385351
