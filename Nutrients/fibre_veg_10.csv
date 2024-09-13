@@ -1,10 +1,10 @@
-food_name	energy_kcal	carb_g	protein_g	fat_g	fibre_g
-"Bengal gram, whole"	287.04	39.56	18.77	5.11	25.22
-"Rajmah, black"	298.03	49.59	19.01	1.62	17.74
-"Gingelly seeds, brown"	516.48	9.76	21.61	43.22	17.21
-"Green gram, whole"	293.73	46.13	22.53	1.14	17.04
-"Peas, dry"	303.29	48.93	20.43	1.89	17.01
-"Lentil whole, yellowish"	297.79	47.91	22.87	0.61	16.66
-Quinoa	328.39	53.65	13.11	5.5	14.66
-Ragi	320.74	66.82	7.16	1.92	11.18
-Ground nut	520.06	17.27	23.65	39.63	10.38
+food_name,energy_kcal,carb_g,protein_g,fat_g,fibre_g
+"Bengal gram, whole",287.04,39.56,18.77,5.11,25.22
+"Rajmah, black",298.03,49.59,19.01,1.62,17.74
+"Gingelly seeds, brown",516.48,9.76,21.61,43.22,17.21
+"Green gram, whole",293.73,46.13,22.53,1.14,17.04
+"Peas, dry",303.29,48.93,20.43,1.89,17.01
+"Lentil whole, yellowish",297.79,47.91,22.87,0.61,16.66
+Quinoa,328.39,53.65,13.11,5.5,14.66
+Ragi,320.74,66.82,7.16,1.92,11.18
+Ground nut,520.06,17.27,23.65,39.63,10.38
