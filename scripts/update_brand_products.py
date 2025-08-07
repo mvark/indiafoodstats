@@ -21,7 +21,7 @@ except FileNotFoundError:
     existing_df = pd.DataFrame()
     known_codes = set()
 
-# --- SQL Query with NOVA & NutriScore filters ---
+# --- SQL Query ---
 sql = f"""
 SELECT 
   code, product_name, brands, 
@@ -34,11 +34,10 @@ WHERE
   AND countries_en = 'India'
   AND nova_group IN ('1', '2', '3', '4')
   AND nutriscore_grade IN ('a', 'b', 'c', 'd', 'e')
-  AND datetime(last_modified_datetime) > '{DATE_CUTOFF}T00:00:00Z'
-LIMIT 500;
+  AND datetime(last_modified_datetime) > '{DATE_CUTOFF}T00:00:00Z';
 """.strip()
 
-# --- Fetch from OFF API ---
+# --- Fetch data from OFF API ---
 response = requests.get(f"{OFF_SQL_API}?sql={quote(sql)}&_shape=array")
 if response.status_code != 200:
     print(f"❌ Failed to fetch data: {response.status_code}")
@@ -47,17 +46,20 @@ if response.status_code != 200:
 data = response.json()
 df = pd.DataFrame(data)
 
-# --- Deduplicate and append ---
+# --- Filter out already known codes ---
 if not df.empty:
     df = df[~df["code"].isin(known_codes)]
 
-if not df.empty:
-    combined_df = pd.concat([existing_df, df], ignore_index=True)
-    os.makedirs("Brands", exist_ok=True)
-    combined_df.to_csv(CSV_PATH, index=False)
-    print(f"✅ Added {len(df)} new records to {CSV_PATH}")
-else:
-    print("✅ No new records found.")
+# --- Safeguard: Skip update if no real change ---
+if df.empty:
+    print("✅ No new valid records found. Nothing to update.")
+    sys.exit(0)
+
+# --- Append to CSV ---
+combined_df = pd.concat([existing_df, df], ignore_index=True)
+os.makedirs("Brands", exist_ok=True)
+combined_df.to_csv(CSV_PATH, index=False)
+print(f"✅ Added {len(df)} new records to {CSV_PATH}")
 
 # --- Update README.md with last updated date ---
 today = datetime.utcnow().strftime("%Y-%m-%d")
@@ -87,3 +89,7 @@ def update_readme_date(readme_path, brand, date_str):
     print(f"📅 Updated README.md with last updated date for {brand}")
 
 update_readme_date(README_PATH, BRAND, today)
+
+# --- Optional: Create Pull Request instead of direct push ---
+# Enable this in GitHub Actions by replacing push step with:
+# - uses: peter-evans/create-pull-request@v5
