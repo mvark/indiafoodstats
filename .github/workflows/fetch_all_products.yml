@@ -1,0 +1,93 @@
+name: Fetch All India Products
+
+on:
+  workflow_dispatch:  # manual trigger
+
+jobs:
+  fetch-and-save:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # allow push to repo
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Fetch data and save CSV
+        run: |
+          python << 'EOF'
+          import os
+          import requests
+          import pandas as pd
+          from urllib.parse import quote
+          from datetime import datetime
+
+          # --- Config ---
+          API_URL = "https://mirabelle.openfoodfacts.org/products.json"
+          DATE_STR = datetime.utcnow().strftime("%Y-%m-%d")
+          README_PATH = "Brands/README.md"
+
+          # --- SQL Query ---
+          sql = """
+          SELECT 
+            code, product_name, brands, categories, 
+            "energy-kcal_100g", carbohydrates_100g, sugars_100g, fiber_100g,
+            proteins_100g, fat_100g, "saturated-fat_100g", salt_100g,
+            nova_group, nutriscore_grade, url, last_modified_datetime
+          FROM [all]
+          WHERE 
+            TRIM(code) <> ''
+            AND TRIM(product_name) <> ''
+            AND countries_en = 'India'
+          """.strip()
+
+          # --- Fetch data ---
+          print("Fetching data from OFF API...")
+          resp = requests.get(f"{API_URL}?sql={quote(sql)}&_shape=array")
+          resp.raise_for_status()
+          data = resp.json()
+
+          # --- Save CSV ---
+          df = pd.DataFrame(data)
+          if df.empty:
+              print("No records found. Exiting without saving.")
+              exit(0)
+
+          record_count = len(df)
+          csv_filename = f"all_{DATE_STR}_{record_count}.csv"
+          csv_path = os.path.join("Brands", csv_filename)
+
+          os.makedirs("Brands", exist_ok=True)
+          df.to_csv(csv_path, index=False)
+          print(f"Saved {record_count} records to {csv_path}")
+
+          # --- Update README.md with a markdown table ---
+          note = f"| {DATE_STR} | {record_count} | `{csv_filename}` |\n"
+          if os.path.exists(README_PATH):
+              with open(README_PATH, "a", encoding="utf-8") as f:
+                  f.write(note)
+          else:
+              with open(README_PATH, "w", encoding="utf-8") as f:
+                  f.write("# Brands Data Log\n\n")
+                  f.write("| Date | Record Count | File |\n")
+                  f.write("|------|--------------|------|\n")
+                  f.write(note)
+
+          print(f"Updated {README_PATH}")
+          EOF
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Brands/
+          git commit -m "Fetched all India products on $(date -u +'%Y-%m-%d')" || echo "No changes"
+          git push
