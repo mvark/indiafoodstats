@@ -6,11 +6,11 @@ from datetime import datetime
 from urllib.parse import quote
 
 # --- CONFIG ---
-BRAND = sys.argv[1] if len(sys.argv) > 1 else "amul"
+BRAND = sys.argv[1] if len(sys.argv) > 1 else "Milky Mist"
 BRAND_FILE = BRAND.lower().replace(" ", "_") + ".csv"
 CSV_PATH = os.path.join("Brands", BRAND_FILE)
 README_PATH = "README.md"
-DATE_CUTOFF = "2025-07-21"
+DATE_CUTOFF = "2012-07-21"
 OFF_SQL_API = "https://mirabelle.openfoodfacts.org/products.json"
 
 # --- Load existing product codes ---
