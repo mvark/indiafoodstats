@@ -1,0 +1,30 @@
+name: Generate NOVA Chart
+
+on:
+  workflow_dispatch:  # run manually
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install requests pandas matplotlib seaborn
+
+      - name: Generate chart
+        run: python scripts/generate_nova_chart.py
+
+      - name: Commit and push chart
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add Charts/nova_distribution_top20.png
+          git commit -m "📊 Auto-update NOVA chart"
+          git push
