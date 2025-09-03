@@ -25,6 +25,6 @@ jobs:
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add Charts/nova_distribution_top20.png
+          git add charts/
           git commit -m "📊 Auto-update NOVA chart"
           git push
