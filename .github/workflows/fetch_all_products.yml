@@ -33,7 +33,7 @@ jobs:
           # --- Config ---
           API_URL = "https://mirabelle.openfoodfacts.org/products.json"
           DATE_STR = datetime.utcnow().strftime("%Y-%m-%d")
-          README_PATH = "Brands/README.md"
+          README_PATH = "data/readme.md"
 
           # --- SQL Query ---
           sql = """
@@ -63,9 +63,9 @@ jobs:
 
           record_count = len(df)
           csv_filename = f"all_{DATE_STR}_{record_count}.csv"
-          csv_path = os.path.join("Brands", csv_filename)
+          csv_path = os.path.join("data", csv_filename)
 
-          os.makedirs("Brands", exist_ok=True)
+          os.makedirs("data", exist_ok=True)
           df.to_csv(csv_path, index=False)
           print(f"Saved {record_count} records to {csv_path}")
 
@@ -76,7 +76,7 @@ jobs:
                   f.write(note)
           else:
               with open(README_PATH, "w", encoding="utf-8") as f:
-                  f.write("# Brands Data Log\n\n")
+                  f.write("# Data Log\n\n")
                   f.write("| Date | Record Count | File |\n")
                   f.write("|------|--------------|------|\n")
                   f.write(note)
