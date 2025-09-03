@@ -17,6 +17,8 @@ def encode_sql(sql):
     return quote(sql).replace("%20", "+")
 
 def fetch_brand_data(brand):
+    # Escape apostrophes in SQL string
+    safe_brand = brand.replace("'", "''")
     sql = f"""
     SELECT
       CASE
@@ -26,7 +28,7 @@ def fetch_brand_data(brand):
       COUNT(*) AS product_count
     FROM [all]
     WHERE countries_en = 'India'
-      AND LOWER(brands) = '{brand}'
+      AND LOWER(brands) = '{safe_brand}'
     GROUP BY nova_status;
     """.strip()
     url = f"{BASE_URL}{encode_sql(sql)}&_shape=array"
