@@ -77,6 +77,6 @@ plt.legend(title="NOVA Group", bbox_to_anchor=(1.05, 1), loc="upper left")
 plt.tight_layout()
 
 # Save
-output_file = "Charts/nova_distribution_top20.png"
+output_file = "charts/nova_distribution_top20.png"
 plt.savefig(output_file, dpi=150)
 print(f"Chart saved as {output_file}")
