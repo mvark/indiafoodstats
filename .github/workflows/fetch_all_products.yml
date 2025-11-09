@@ -28,34 +28,38 @@ jobs:
           from datasets import load_dataset
           import pandas as pd
           from pathlib import Path
-          import sys
 
           # === CONFIG ===
           DATASET_NAME = "openfoodfacts/product-database"
           SPLIT = "food"
           OUTPUT_FILE = Path("data/india_products.csv")
-          CHUNK_SIZE = 5000
+          CHUNK_SIZE = 1000  # Smaller for faster feedback
 
           OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-          # === SAFE STRING EXTRACTOR ===
+          # === SAFE LIST → STRING ===
           def safe_str(value):
               if isinstance(value, (list, tuple)):
-                  return " ".join([str(x) for x in value if x is not None]).strip()
+                  return " ".join([str(x) for x in value if x]).strip()
               return str(value or "").strip()
 
-          # === FILTER FUNCTION ===
+          # === FILTER: India in countries_en (anywhere) ===
           def is_valid(record):
               try:
                   code = safe_str(record.get("code"))
                   name = safe_str(record.get("product_name"))
-                  country = safe_str(record.get("countries_en"))
+                  countries = safe_str(record.get("countries_en", "")).split()
 
-                  return code != "" and name != "" and country == "India"
-              except:
+                  return (
+                      code != "" and
+                      name != "" and
+                      "India" in countries
+                  )
+              except Exception as e:
+                  print(f"Error in record: {e}")
                   return False
 
-          # === FIELDS TO EXTRACT (all 17) ===
+          # === FIELDS ===
           FIELDS = [
               "code", "product_name", "brands", "categories",
               "energy-kcal_100g", "carbohydrates_100g", "sugars_100g", "fiber_100g",
@@ -72,30 +76,49 @@ jobs:
           chunk = []
           total_saved = 0
 
-          print("Streaming and filtering India products...")
-          try:
-              for record in filtered:
-                  selected = {}
-                  for k in FIELDS:
-                      val = record.get(k)
-                      if isinstance(val, (list, tuple)):
-                          selected[k] = " | ".join([str(x) for x in val if x is not None])
-                      else:
-                          selected[k] = val
-                  chunk.append(selected)
+          print("Streaming... (will print every 1000 records)")
+          for i, record in enumerate(filtered, 1):
+              selected = {}
+              for k in FIELDS:
+                  val = record.get(k)
+                  if isinstance(val, (list, tuple)):
+                      selected[k] = " | ".join([str(x) for x in val if x])
+                  else:
+                      selected[k] = val
+              chunk.append(selected)
 
-                  if len(chunk) >= CHUNK_SIZE:
-                      df = pd.DataFrame(chunk)
-                      mode = "a" if header_written else "w"
-                      df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
-                      header_written = True
-                      total_saved += len(chunk)
-                      print(f"Saved chunk: {total_saved:,} rows")
-                      chunk = []
-          except Exception as e:
-              print(f"Error during streaming: {e}")
-              sys.exit(1)
+              if len(chunk) >= CHUNK_SIZE:
+                  df = pd.DataFrame(chunk)
+                  mode = "a" if header_written else "w"
+                  df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
+                  header_written = True
+                  total_saved += len(chunk)
+                  print(f"SAVED CHUNK: {total_saved:,} rows")
+                  chunk = []
+
+              # Debug: print every 1000 records
+              if i % 1000 == 0:
+                  print(f"Processed {i:,} records...")
 
           # Final chunk
           if chunk:
-              df = pd
+              df = pd.DataFrame(chunk)
+              mode = "a" if header_written else "w"
+              df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
+              total_saved += len(df)
+              print(f"FINAL CHUNK SAVED: {len(df)} rows")
+
+          print(f"\nSUCCESS: {total_saved:,} India products saved to {OUTPUT_FILE}")
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/india_products.csv
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Update India products [HF] - $(date)"
+            git push
+          fi
