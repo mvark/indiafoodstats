@@ -1,93 +1,101 @@
-name: Fetch All India Products
+name: Fetch India Products on OFF from Hugging Face
 
 on:
-  workflow_dispatch:  # manual trigger
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
-  fetch-and-save:
+  fetch:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # allow push to repo
+      contents: write
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install pandas requests
-
-      - name: Fetch data and save CSV
         run: |
-          python << 'EOF'
-          import os
-          import requests
+          pip install datasets pyarrow pandas
+
+      - name: Fetch, filter, and save India products
+        run: |
+          python - <<'EOF'
+          from datasets import load_dataset
           import pandas as pd
-          from urllib.parse import quote
-          from datetime import datetime
+          from pathlib import Path
+          import sys
 
-          # --- Config ---
-          API_URL = "https://mirabelle.openfoodfacts.org/products.json"
-          DATE_STR = datetime.utcnow().strftime("%Y-%m-%d")
-          README_PATH = "data/readme.md"
+          # === CONFIG ===
+          DATASET_NAME = "openfoodfacts/product-database"
+          SPLIT = "food"
+          OUTPUT_FILE = Path("data/india_products.csv")
+          CHUNK_SIZE = 5000
 
-          # --- SQL Query ---
-          sql = """
-          SELECT 
-            code, product_name, brands, categories, 
-            "energy-kcal_100g", carbohydrates_100g, sugars_100g, fiber_100g,
-            proteins_100g, fat_100g, "saturated-fat_100g", salt_100g,
-            nova_group, nutriscore_grade, url, last_modified_datetime
-          FROM [all]
-          WHERE 
-            TRIM(code) <> ''
-            AND TRIM(product_name) <> ''
-            AND countries_en = 'India'
-          """.strip()
+          OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-          # --- Fetch data ---
-          print("Fetching data from OFF API...")
-          resp = requests.get(f"{API_URL}?sql={quote(sql)}&_shape=array")
-          resp.raise_for_status()
-          data = resp.json()
+          # === SAFE STRING EXTRACTOR ===
+          def safe_str(value):
+              if isinstance(value, (list, tuple)):
+                  return " ".join([str(x) for x in value if x is not None]).strip()
+              return str(value or "").strip()
 
-          # --- Save CSV ---
-          df = pd.DataFrame(data)
-          if df.empty:
-              print("No records found. Exiting without saving.")
-              exit(0)
+          # === FILTER FUNCTION ===
+          def is_valid(record):
+              try:
+                  code = safe_str(record.get("code"))
+                  name = safe_str(record.get("product_name"))
+                  country = safe_str(record.get("countries_en"))
 
-          record_count = len(df)
-          csv_filename = f"all_{DATE_STR}_{record_count}.csv"
-          csv_path = os.path.join("data", csv_filename)
+                  return code != "" and name != "" and country == "India"
+              except:
+                  return False
 
-          os.makedirs("data", exist_ok=True)
-          df.to_csv(csv_path, index=False)
-          print(f"Saved {record_count} records to {csv_path}")
+          # === FIELDS TO EXTRACT (all 17) ===
+          FIELDS = [
+              "code", "product_name", "brands", "categories",
+              "energy-kcal_100g", "carbohydrates_100g", "sugars_100g", "fiber_100g",
+              "proteins_100g", "fat_100g", "saturated-fat_100g", "salt_100g",
+              "nova_group", "nutriscore_grade", "ingredients_text",
+              "last_modified_datetime", "url"
+          ]
 
-          # --- Update README.md with a markdown table ---
-          note = f"| {DATE_STR} | {record_count} | `{csv_filename}` |\n"
-          if os.path.exists(README_PATH):
-              with open(README_PATH, "a", encoding="utf-8") as f:
-                  f.write(note)
-          else:
-              with open(README_PATH, "w", encoding="utf-8") as f:
-                  f.write("# Data Log\n\n")
-                  f.write("| Date | Record Count | File |\n")
-                  f.write("|------|--------------|------|\n")
-                  f.write(note)
+          print(f"Loading dataset: {DATASET_NAME} (split: {SPLIT})")
+          ds = load_dataset(DATASET_NAME, split=SPLIT, streaming=True)
+          filtered = ds.filter(is_valid)
 
-          print(f"Updated {README_PATH}")
-          EOF
+          header_written = False
+          chunk = []
+          total_saved = 0
 
-      - name: Commit and push changes
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          git commit -m "Fetched all India products on $(date -u +'%Y-%m-%d')" || echo "No changes"
-          git push
+          print("Streaming and filtering India products...")
+          try:
+              for record in filtered:
+                  selected = {}
+                  for k in FIELDS:
+                      val = record.get(k)
+                      if isinstance(val, (list, tuple)):
+                          selected[k] = " | ".join([str(x) for x in val if x is not None])
+                      else:
+                          selected[k] = val
+                  chunk.append(selected)
+
+                  if len(chunk) >= CHUNK_SIZE:
+                      df = pd.DataFrame(chunk)
+                      mode = "a" if header_written else "w"
+                      df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
+                      header_written = True
+                      total_saved += len(chunk)
+                      print(f"Saved chunk: {total_saved:,} rows")
+                      chunk = []
+          except Exception as e:
+              print(f"Error during streaming: {e}")
+              sys.exit(1)
+
+          # Final chunk
+          if chunk:
+              df = pd
