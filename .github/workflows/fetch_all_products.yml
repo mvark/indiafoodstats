@@ -22,41 +22,39 @@ jobs:
         run: |
           pip install datasets pyarrow pandas
 
-      - name: Fetch, filter, and save India products
+      - name: Fetch, filter, save CSV & update README
+        id: fetch
         run: |
           python - <<'EOF'
           from datasets import load_dataset
           import pandas as pd
           from pathlib import Path
+          import os
+          from datetime import datetime
 
           # === CONFIG ===
           DATASET_NAME = "openfoodfacts/product-database"
           SPLIT = "food"
-          OUTPUT_FILE = Path("data/india_products.csv")
-          CHUNK_SIZE = 1000  # Smaller for faster feedback
+          DATA_DIR = Path("data")
+          README_PATH = DATA_DIR / "README.md"
+          CHUNK_SIZE = 1000
 
-          OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+          DATA_DIR.mkdir(exist_ok=True)
 
-          # === SAFE LIST → STRING ===
-          def safe_str(value):
-              if isinstance(value, (list, tuple)):
-                  return " ".join([str(x) for x in value if x]).strip()
-              return str(value or "").strip()
+          # === HELPER: Safe string from list or scalar ===
+          def safe_str(val):
+              if isinstance(val, (list, tuple)):
+                  return " ".join(str(x) for x in val if x).strip()
+              return str(val or "").strip()
 
-          # === FILTER: India in countries_en (anywhere) ===
+          # === FILTER: India + non-empty code/name ===
           def is_valid(record):
               try:
                   code = safe_str(record.get("code"))
                   name = safe_str(record.get("product_name"))
                   countries = safe_str(record.get("countries_en", "")).split()
-
-                  return (
-                      code != "" and
-                      name != "" and
-                      "India" in countries
-                  )
-              except Exception as e:
-                  print(f"Error in record: {e}")
+                  return code and name and "India" in countries
+              except:
                   return False
 
           # === FIELDS ===
@@ -68,57 +66,63 @@ jobs:
               "last_modified_datetime", "url"
           ]
 
-          print(f"Loading dataset: {DATASET_NAME} (split: {SPLIT})")
+          print("Loading dataset...")
           ds = load_dataset(DATASET_NAME, split=SPLIT, streaming=True)
           filtered = ds.filter(is_valid)
 
-          header_written = False
-          chunk = []
-          total_saved = 0
-
-          print("Streaming... (will print every 1000 records)")
+          all_records = []
           for i, record in enumerate(filtered, 1):
               selected = {}
               for k in FIELDS:
                   val = record.get(k)
                   if isinstance(val, (list, tuple)):
-                      selected[k] = " | ".join([str(x) for x in val if x])
+                      selected[k] = " | ".join(str(x) for x in val if x)
                   else:
                       selected[k] = val
-              chunk.append(selected)
+              all_records.append(selected)
 
-              if len(chunk) >= CHUNK_SIZE:
-                  df = pd.DataFrame(chunk)
-                  mode = "a" if header_written else "w"
-                  df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
-                  header_written = True
-                  total_saved += len(chunk)
-                  print(f"SAVED CHUNK: {total_saved:,} rows")
-                  chunk = []
-
-              # Debug: print every 1000 records
               if i % 1000 == 0:
-                  print(f"Processed {i:,} records...")
+                  print(f"Collected {i:,} records...")
 
-          # Final chunk
-          if chunk:
-              df = pd.DataFrame(chunk)
-              mode = "a" if header_written else "w"
-              df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
-              total_saved += len(df)
-              print(f"FINAL CHUNK SAVED: {len(df)} rows")
+          if not all_records:
+              print("No records matched the filter.")
+              print("::set-output name=records::0")
+              print("::set-output name=csv_file::none")
+              EOF
+              exit(0)
 
-          print(f"\nSUCCESS: {total_saved:,} India products saved to {OUTPUT_FILE}")
+          df = pd.DataFrame(all_records)
+          record_count = len(df)
+          date_str = datetime.now().strftime("%Y%m%d")
+          csv_filename = f"all_{date_str}_{record_count}.csv"
+          csv_path = DATA_DIR / csv_filename
+
+          # Save CSV
+          df.to_csv(csv_path, index=False)
+          print(f"SAVED: {record_count} records → {csv_path}")
+
+          # Update README.md
+          table_row = f"| {date_str} | {record_count} | `{csv_filename}` |\n"
+          if README_PATH.exists():
+              with open(README_PATH, "a", encoding="utf-8") as f:
+                  f.write(table_row)
+              print(f"Appended to {README_PATH}")
+          else:
+              header = "# Data Log\n\n| Date | Record Count | File |\n|------|--------------|------|\n"
+              with open(README_PATH, "w", encoding="utf-8") as f:
+                  f.write(header + table_row)
+              print(f"Created {README_PATH}")
+
+          # Output for next steps
+          print(f"::set-output name=records::{record_count}")
+          print(f"::set-output name=csv_file::{csv_path}")
           EOF
 
       - name: Commit and push
+        if: steps.fetch.outputs.csv_file != 'none'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add data/india_products.csv
-          if git diff --staged --quiet; then
-            echo "No changes"
-          else
-            git commit -m "Update India products [HF] - $(date)"
-            git push
-          fi
+          git add data/
+          git commit -m "Add India products: ${{ steps.fetch.outputs.csv_file }} (${{ steps.fetch.outputs.records }} records)"
+          git push
