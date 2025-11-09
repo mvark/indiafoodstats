@@ -1,0 +1,97 @@
+name: Fetch India Products from Hugging Face
+
+on:
+  workflow_dispatch:  # manual trigger
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install datasets pyarrow pandas
+
+      - name: Fetch, filter, and save India products
+        run: |
+          python - <<EOF
+          from datasets import load_dataset
+          import pandas as pd
+          from pathlib import Path
+
+          # Config
+          DATASET_NAME = "openfoodfacts/product-database"
+          SPLIT = "train"
+          OUTPUT_FILE = Path("data/india_products.csv")
+          CHUNK_SIZE = 5000
+
+          OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+          # Filter function
+          def is_valid(record):
+              code = (record.get("code") or "").strip()
+              name = (record.get("product_name") or "").strip()
+              country = record.get("countries_en")
+              return code != "" and name != "" and country == "India"
+
+          # Fields to extract
+          FIELDS = [
+              "code", "product_name", "brands", "categories",
+              "energy-kcal_100g", "carbohydrates_100g", "sugars_100g", "fiber_100g",
+              "proteins_100g", "fat_100g", "saturated-fat_100g", "salt_100g",
+              "nova_group", "nutriscore_grade", "ingredients_text",
+              "last_modified_datetime", "url"
+          ]
+
+          # Stream and process
+          ds = load_dataset(DATASET_NAME, split=SPLIT, streaming=True)
+          filtered = ds.filter(is_valid)
+
+          header_written = False
+          chunk = []
+
+          print("Streaming and filtering India products...")
+
+          for record in filtered:
+              selected = {k: record.get(k) for k in FIELDS}
+              chunk.append(selected)
+
+              if len(chunk) >= CHUNK_SIZE:
+                  df = pd.DataFrame(chunk)
+                  mode = "a" if header_written else "w"
+                  df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
+                  header_written = True
+                  chunk = []
+                  print(f"Saved chunk of {CHUNK_SIZE} rows")
+
+          # Final chunk
+          if chunk:
+              df = pd.DataFrame(chunk)
+              mode = "a" if header_written else "w"
+              df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
+              print(f"Final chunk saved: {len(chunk)} rows")
+
+          print(f"Done! Output: {OUTPUT_FILE}")
+          EOF
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/india_products.csv
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update India products from Hugging Face [skip ci]"
+            git push
+          fi
