@@ -31,7 +31,7 @@ jobs:
 
           # Config
           DATASET_NAME = "openfoodfacts/product-database"
-          SPLIT = "train"
+          SPLIT = "food"
           OUTPUT_FILE = Path("data/india_products.csv")
           CHUNK_SIZE = 5000
 
