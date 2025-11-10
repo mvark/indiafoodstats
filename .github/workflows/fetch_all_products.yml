@@ -35,10 +35,10 @@ jobs:
           
           try:
               # Load dataset using Hugging Face datasets library
-              # This handles rate limiting and authentication properly
+              # Use 'food' split instead of 'train'
               dataset = load_dataset(
                   "openfoodfacts/product-database",
-                  split="train",
+                  split="food",
                   streaming=True  # Stream mode - doesn't download entire file
               )
               
