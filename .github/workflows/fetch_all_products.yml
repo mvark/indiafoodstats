@@ -17,7 +17,7 @@ jobs:
           python-version: "3.x"
       
       - name: Install dependencies
-        run: pip install pandas duckdb
+        run: pip install pandas datasets pyarrow
       
       - name: Fetch data and save CSV
         run: |
@@ -25,83 +25,136 @@ jobs:
           import os
           import pandas as pd
           from datetime import datetime, timezone
-          import duckdb
+          from datasets import load_dataset
           
           # --- Config ---
-          PARQUET_URL = "https://huggingface.co/datasets/openfoodfacts/product-database/resolve/main/food.parquet"
           DATE_STR = datetime.now(timezone.utc).strftime("%Y-%m-%d")
           README_PATH = "data/readme.md"
           
-          print("Querying Parquet file directly from URL...")
+          print("Loading dataset from Hugging Face...")
           
-          # --- Query Parquet file directly using DuckDB ---
           try:
-              # Create DuckDB connection
-              con = duckdb.connect(database=':memory:')
+              # Load dataset using Hugging Face datasets library
+              # This handles rate limiting and authentication properly
+              dataset = load_dataset(
+                  "openfoodfacts/product-database",
+                  split="train",
+                  streaming=True  # Stream mode - doesn't download entire file
+              )
               
-              # Query to filter India products directly from remote Parquet
-              query = f"""
-              SELECT 
-                  code,
-                  product_name[1]['text'] as product_name,
-                  brands,
-                  categories,
-                  nova_group,
-                  nutriscore_grade,
-                  link as url,
-                  last_modified_t,
-                  ingredients_text[1]['text'] as ingredients_text,
-                  list_filter(nutriments, x -> x['name'] = 'energy-kcal')[1]['100g'] as "energy-kcal_100g",
-                  list_filter(nutriments, x -> x['name'] = 'carbohydrates')[1]['100g'] as carbohydrates_100g,
-                  list_filter(nutriments, x -> x['name'] = 'sugars')[1]['100g'] as sugars_100g,
-                  list_filter(nutriments, x -> x['name'] = 'fiber')[1]['100g'] as fiber_100g,
-                  list_filter(nutriments, x -> x['name'] = 'proteins')[1]['100g'] as proteins_100g,
-                  list_filter(nutriments, x -> x['name'] = 'fat')[1]['100g'] as fat_100g,
-                  list_filter(nutriments, x -> x['name'] = 'saturated-fat')[1]['100g'] as "saturated-fat_100g",
-                  list_filter(nutriments, x -> x['name'] = 'salt')[1]['100g'] as salt_100g
-              FROM read_parquet('{PARQUET_URL}')
-              WHERE 
-                  code IS NOT NULL 
-                  AND code != ''
-                  AND product_name IS NOT NULL 
-                  AND len(product_name) > 0
-                  AND list_contains(
-                      list_transform(countries_tags, x -> lower(CAST(x AS VARCHAR))),
-                      'en:india'
-                  )
-              """
+              print("Filtering for India products...")
               
-              print("Executing query (this may take a few minutes)...")
-              df = con.execute(query).df()
-              con.close()
+              india_products = []
+              batch_size = 1000
+              count = 0
               
-              print(f"Found {len(df)} India products")
+              # Process in streaming mode
+              for example in dataset:
+                  count += 1
+                  if count % 10000 == 0:
+                      print(f"Processed {count} records, found {len(india_products)} India products so far...")
+                  
+                  # Check if product has required fields
+                  code = example.get('code')
+                  product_name = example.get('product_name')
+                  countries_tags = example.get('countries_tags')
+                  
+                  if not code or not product_name or not countries_tags:
+                      continue
+                  
+                  # Check if India is in countries_tags
+                  if not isinstance(countries_tags, list):
+                      continue
+                  
+                  has_india = any('india' in str(country).lower() for country in countries_tags)
+                  
+                  if has_india:
+                      # Extract product name
+                      product_name_text = None
+                      if isinstance(product_name, list) and len(product_name) > 0:
+                          if isinstance(product_name[0], dict):
+                              product_name_text = product_name[0].get('text')
+                      
+                      # Extract ingredients text
+                      ingredients_text_value = None
+                      ingredients_text = example.get('ingredients_text')
+                      if isinstance(ingredients_text, list) and len(ingredients_text) > 0:
+                          if isinstance(ingredients_text[0], dict):
+                              ingredients_text_value = ingredients_text[0].get('text')
+                      
+                      # Extract nutriments
+                      nutriments = example.get('nutriments', [])
+                      
+                      def get_nutriment(nutriments_list, key):
+                          if not isinstance(nutriments_list, list):
+                              return None
+                          for item in nutriments_list:
+                              if isinstance(item, dict) and item.get('name') == key:
+                                  return item.get('100g')
+                          return None
+                      
+                      # Build record
+                      record = {
+                          'code': code,
+                          'product_name': product_name_text,
+                          'brands': example.get('brands'),
+                          'categories': example.get('categories'),
+                          'energy-kcal_100g': get_nutriment(nutriments, 'energy-kcal'),
+                          'carbohydrates_100g': get_nutriment(nutriments, 'carbohydrates'),
+                          'sugars_100g': get_nutriment(nutriments, 'sugars'),
+                          'fiber_100g': get_nutriment(nutriments, 'fiber'),
+                          'proteins_100g': get_nutriment(nutriments, 'proteins'),
+                          'fat_100g': get_nutriment(nutriments, 'fat'),
+                          'saturated-fat_100g': get_nutriment(nutriments, 'saturated-fat'),
+                          'salt_100g': get_nutriment(nutriments, 'salt'),
+                          'nova_group': example.get('nova_group'),
+                          'nutriscore_grade': example.get('nutriscore_grade'),
+                          'url': example.get('link'),
+                          'last_modified_t': example.get('last_modified_t'),
+                          'ingredients_text': ingredients_text_value
+                      }
+                      
+                      india_products.append(record)
+                      
+                      # Save periodically to avoid memory issues
+                      if len(india_products) >= batch_size:
+                          print(f"Collected {len(india_products)} products, continuing...")
+              
+              print(f"Total products processed: {count}")
+              print(f"Total India products found: {len(india_products)}")
               
           except Exception as e:
-              print(f"Error querying Parquet file: {e}")
+              print(f"Error loading dataset: {e}")
               import traceback
               traceback.print_exc()
               exit(1)
           
-          # --- Convert last_modified_t to datetime ---
-          if 'last_modified_t' in df.columns:
-              df['last_modified_datetime'] = pd.to_datetime(df['last_modified_t'], unit='s', errors='coerce')
-              df = df.drop('last_modified_t', axis=1)
-          
-          # --- Save CSV ---
-          if df.empty:
-              print("No records found. Exiting without saving.")
+          # --- Convert to DataFrame ---
+          if not india_products:
+              print("No India products found. Exiting without saving.")
               exit(0)
           
-          record_count = len(df)
+          df_result = pd.DataFrame(india_products)
+          
+          # Convert timestamp to datetime
+          if 'last_modified_t' in df_result.columns:
+              df_result['last_modified_datetime'] = pd.to_datetime(
+                  df_result['last_modified_t'], 
+                  unit='s', 
+                  errors='coerce'
+              )
+              df_result = df_result.drop('last_modified_t', axis=1)
+          
+          # --- Save CSV ---
+          record_count = len(df_result)
           csv_filename = f"all_{DATE_STR}_{record_count}.csv"
           csv_path = os.path.join("data", csv_filename)
           os.makedirs("data", exist_ok=True)
           
-          df.to_csv(csv_path, index=False)
+          df_result.to_csv(csv_path, index=False)
           print(f"Saved {record_count} records to {csv_path}")
           
-          # --- Update README.md with a markdown table ---
+          # --- Update README.md ---
           note = f"| {DATE_STR} | {record_count} | `{csv_filename}` |\n"
           
           if os.path.exists(README_PATH):
