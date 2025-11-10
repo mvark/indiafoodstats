@@ -1,128 +1,117 @@
 name: Fetch India Products on OFF from Hugging Face
 
 on:
-  workflow_dispatch:  # Manual trigger only
-
+  workflow_dispatch:  # manual trigger
 jobs:
-  fetch:
+  fetch-and-save:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-
+      contents: write  # allow push to repo
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
-
+          python-version: "3.x"
+      
       - name: Install dependencies
+        run: pip install pandas pyarrow huggingface-hub
+      
+      - name: Fetch data and save CSV
         run: |
-          pip install datasets pyarrow pandas
-
-      - name: Fetch, filter, save CSV & update README
-        id: fetch
-        run: |
-          python - <<'EOF'
-          from datasets import load_dataset
-          import pandas as pd
-          from pathlib import Path
+          python << 'EOF'
           import os
+          import pandas as pd
           from datetime import datetime
-
-          # === CONFIG ===
-          DATASET_NAME = "openfoodfacts/product-database"
-          SPLIT = "food"
-          DATA_DIR = Path("data")
-          README_PATH = DATA_DIR / "README.md"
-          CHUNK_SIZE = 1000
-
-          DATA_DIR.mkdir(exist_ok=True)
-
-          # === HELPER: Safe string from list or scalar ===
-          def safe_str(val):
-              if isinstance(val, (list, tuple)):
-                  return " ".join(str(x) for x in val if x).strip()
-              return str(val or "").strip()
-
-          # === FILTER: India + non-empty code/name ===
-          def is_valid(record):
-              try:
-                  code = safe_str(record.get("code"))
-                  name = safe_str(record.get("product_name"))
-                  countries = safe_str(record.get("countries_en", "")).split()
-                  return code and name and "India" in countries
-              except:
-                  return False
-
-          # === FIELDS ===
-          FIELDS = [
-              "code", "product_name", "brands", "categories",
-              "energy-kcal_100g", "carbohydrates_100g", "sugars_100g", "fiber_100g",
-              "proteins_100g", "fat_100g", "saturated-fat_100g", "salt_100g",
-              "nova_group", "nutriscore_grade", "ingredients_text",
-              "last_modified_datetime", "url"
+          from huggingface_hub import hf_hub_download
+          
+          # --- Config ---
+          REPO_ID = "openfoodfacts/product-database"
+          DATE_STR = datetime.utcnow().strftime("%Y-%m-%d")
+          README_PATH = "data/readme.md"
+          
+          # --- Download Parquet file from Hugging Face ---
+          print("Downloading Parquet file from Hugging Face...")
+          try:
+              parquet_file = hf_hub_download(
+                  repo_id=REPO_ID,
+                  filename="products.parquet",
+                  repo_type="dataset"
+              )
+              print(f"Downloaded to: {parquet_file}")
+          except Exception as e:
+              print(f"Error downloading file: {e}")
+              exit(1)
+          
+          # --- Load and filter data ---
+          print("Loading Parquet file...")
+          df = pd.read_parquet(parquet_file)
+          
+          print(f"Total records in database: {len(df)}")
+          
+          # --- Filter for India products ---
+          print("Filtering for India products...")
+          
+          # Filter conditions
+          df_filtered = df[
+              (df['code'].notna()) & (df['code'].astype(str).str.strip() != '') &
+              (df['product_name'].notna()) & (df['product_name'].astype(str).str.strip() != '') &
+              (df['countries_en'].notna()) & (df['countries_en'].str.contains('India', case=False, na=False))
+          ].copy()
+          
+          # --- Select required columns ---
+          columns_to_extract = [
+              'code', 'product_name', 'brands', 'categories', 
+              'energy-kcal_100g', 'carbohydrates_100g', 'sugars_100g', 'fiber_100g',
+              'proteins_100g', 'fat_100g', 'saturated-fat_100g', 'salt_100g',
+              'nova_group', 'nutriscore_grade', 'url', 'last_modified_datetime',
+              'ingredients_text'
           ]
-
-          print("Loading dataset...")
-          ds = load_dataset(DATASET_NAME, split=SPLIT, streaming=True)
-          filtered = ds.filter(is_valid)
-
-          all_records = []
-          for i, record in enumerate(filtered, 1):
-              selected = {}
-              for k in FIELDS:
-                  val = record.get(k)
-                  if isinstance(val, (list, tuple)):
-                      selected[k] = " | ".join(str(x) for x in val if x)
-                  else:
-                      selected[k] = val
-              all_records.append(selected)
-
-              if i % 1000 == 0:
-                  print(f"Collected {i:,} records...")
-
-          if not all_records:
-              print("No records matched the filter.")
-              print("::set-output name=records::0")
-              print("::set-output name=csv_file::none")
-              EOF
+          
+          # Only keep columns that exist in the dataframe
+          available_columns = [col for col in columns_to_extract if col in df_filtered.columns]
+          missing_columns = [col for col in columns_to_extract if col not in df_filtered.columns]
+          
+          if missing_columns:
+              print(f"Warning: Following columns not found in database: {missing_columns}")
+          
+          df_result = df_filtered[available_columns]
+          
+          # --- Save CSV ---
+          if df_result.empty:
+              print("No records found. Exiting without saving.")
               exit(0)
-
-          df = pd.DataFrame(all_records)
-          record_count = len(df)
-          date_str = datetime.now().strftime("%Y%m%d")
-          csv_filename = f"all_{date_str}_{record_count}.csv"
-          csv_path = DATA_DIR / csv_filename
-
-          # Save CSV
-          df.to_csv(csv_path, index=False)
-          print(f"SAVED: {record_count} records → {csv_path}")
-
-          # Update README.md
-          table_row = f"| {date_str} | {record_count} | `{csv_filename}` |\n"
-          if README_PATH.exists():
+          
+          record_count = len(df_result)
+          csv_filename = f"all_{DATE_STR}_{record_count}.csv"
+          csv_path = os.path.join("data", csv_filename)
+          os.makedirs("data", exist_ok=True)
+          
+          df_result.to_csv(csv_path, index=False)
+          print(f"Saved {record_count} records to {csv_path}")
+          
+          # --- Update README.md with a markdown table ---
+          note = f"| {DATE_STR} | {record_count} | `{csv_filename}` |\n"
+          
+          if os.path.exists(README_PATH):
               with open(README_PATH, "a", encoding="utf-8") as f:
-                  f.write(table_row)
-              print(f"Appended to {README_PATH}")
+                  f.write(note)
           else:
-              header = "# Data Log\n\n| Date | Record Count | File |\n|------|--------------|------|\n"
               with open(README_PATH, "w", encoding="utf-8") as f:
-                  f.write(header + table_row)
-              print(f"Created {README_PATH}")
-
-          # Output for next steps
-          print(f"::set-output name=records::{record_count}")
-          print(f"::set-output name=csv_file::{csv_path}")
+                  f.write("# Data Log\n\n")
+                  f.write("| Date | Record Count | File |\n")
+                  f.write("|------|--------------|------|\n")
+                  f.write(note)
+          
+          print(f"Updated {README_PATH}")
           EOF
-
-      - name: Commit and push
-        if: steps.fetch.outputs.csv_file != 'none'
+      
+      - name: Commit and push changes
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config user.name "GitHub Actions Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git commit -m "Add India products: ${{ steps.fetch.outputs.csv_file }} (${{ steps.fetch.outputs.records }} records)"
+          git commit -m "Fetched all India products on $(date -u +'%Y-%m-%d')" || echo "No changes"
           git push
