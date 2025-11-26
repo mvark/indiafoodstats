@@ -37,7 +37,30 @@ jobs:
 
           # --- SQL Query ---
           sql = """
+          SELECT 
+            code, product_name, brands, categories, 
+            "energy-kcal_100g", carbohydrates_100g, sugars_100g, fiber_100g,
+            proteins_100g, fat_100g, "saturated-fat_100g", salt_100g,
+            nova_group, nutriscore_grade, url, last_modified_datetime
+          FROM [all]
+          WHERE 
+            TRIM(code) <> ''
+            AND TRIM(product_name) <> ''
+            AND countries_en = 'India'
+          """.strip()
 
+          # --- Fetch data ---
+          print("Fetching data from OFF API...")
+          resp = requests.get(f"{API_URL}?sql={quote(sql)}&_shape=array")
+          resp.raise_for_status()
+          data = resp.json()
+
+          # --- Save CSV ---
+          df = pd.DataFrame(data)
+          if df.empty:
+              print("No records found. Exiting without saving.")
+              exit(0)
+              
           record_count = len(df)
           csv_filename = f"all_{DATE_STR}_{record_count}.csv"
           csv_path = os.path.join("data", csv_filename)
