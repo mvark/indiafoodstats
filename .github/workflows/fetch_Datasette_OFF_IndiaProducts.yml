@@ -1,13 +1,13 @@
 name: Fetch All India Products
 
 on:
-  workflow_dispatch:  # manual trigger
+  workflow_dispatch:
 
 jobs:
   fetch-and-save:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # allow push to repo
+      contents: write
 
     steps:
       - name: Checkout repo
@@ -59,8 +59,8 @@ jobs:
           df = pd.DataFrame(data)
           if df.empty:
               print("No records found. Exiting without saving.")
-              exit(0)
-              
+              raise SystemExit(0)
+
           record_count = len(df)
           csv_filename = f"all_{DATE_STR}_{record_count}.csv"
           csv_path = os.path.join("data", csv_filename)
@@ -69,10 +69,16 @@ jobs:
           df.to_csv(csv_path, index=False)
           print(f"Saved {record_count} records to {csv_path}")
 
-               f.write(note)
+          # --- Update README log ---
+          note = f"| {DATE_STR} | {record_count} | {csv_filename} |\n"
+
+          if os.path.exists(README_PATH):
+              with open(README_PATH, "a", encoding="utf-8") as f:
+                  f.write(note)
           else:
               with open(README_PATH, "w", encoding="utf-8") as f:
                   f.write("# Data Log\n\n")
                   f.write("| Date | Record Count | File |\n")
                   f.write("|------|--------------|------|\n")
                   f.write(note)
+          EOF
