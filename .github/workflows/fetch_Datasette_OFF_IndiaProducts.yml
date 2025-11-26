@@ -69,7 +69,7 @@ jobs:
           df.to_csv(csv_path, index=False)
           print(f"Saved {record_count} records to {csv_path}")
 
-                  f.write(note)
+               f.write(note)
           else:
               with open(README_PATH, "w", encoding="utf-8") as f:
                   f.write("# Data Log\n\n")
