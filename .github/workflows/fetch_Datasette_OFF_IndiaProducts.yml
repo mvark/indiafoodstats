@@ -1,13 +1,13 @@
 name: Fetch All India Products
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # manual trigger
 
 jobs:
   fetch-and-save:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write  # allow push to repo
 
     steps:
       - name: Checkout repo
@@ -33,7 +33,7 @@ jobs:
           # --- Config ---
           API_URL = "https://mirabelle.openfoodfacts.org/products.json"
           DATE_STR = datetime.utcnow().strftime("%Y-%m-%d")
-          README_PATH = "data/readme.md"
+          README_PATH = "data/README.md"
 
           # --- SQL Query ---
           sql = """
@@ -59,7 +59,7 @@ jobs:
           df = pd.DataFrame(data)
           if df.empty:
               print("No records found. Exiting without saving.")
-              raise SystemExit(0)
+              exit(0)
 
           record_count = len(df)
           csv_filename = f"all_{DATE_STR}_{record_count}.csv"
@@ -69,9 +69,8 @@ jobs:
           df.to_csv(csv_path, index=False)
           print(f"Saved {record_count} records to {csv_path}")
 
-          # --- Update README log ---
-          note = f"| {DATE_STR} | {record_count} | {csv_filename} |\n"
-
+          # --- Update README.md with a markdown table ---
+          note = f"| {DATE_STR} | {record_count} | `{csv_filename}` |\n"
           if os.path.exists(README_PATH):
               with open(README_PATH, "a", encoding="utf-8") as f:
                   f.write(note)
@@ -81,4 +80,14 @@ jobs:
                   f.write("| Date | Record Count | File |\n")
                   f.write("|------|--------------|------|\n")
                   f.write(note)
+
+          print(f"Updated {README_PATH}")
           EOF
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git commit -m "Fetched all India products on $(date -u +'%Y-%m-%d')" || echo "No changes"
+          git push
