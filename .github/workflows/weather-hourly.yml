@@ -1,9 +1,9 @@
-name: Log weather hourly
+name: Log weather hourly (IST)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "5 * * * *"  # every hour at minute 05 UTC
+    - cron: "5 * * * *" # runs hourly; schedule is queued in UTC time
 
 permissions:
   contents: write
@@ -13,43 +13,51 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 [web:200]
 
       - name: Append weather row to CSV
         env:
           LATITUDE: "17.49466643753112"
           LONGITUDE: "78.34291442883635"
-          WEATHERUNION_API_KEY: ${{ secrets.WEATHERUNION_API_KEY }}
+          WEATHERUNION_API_KEY: ${{ secrets.WEATHERUNION_API_KEY }} # store in Repo Settings → Secrets and variables → Actions [web:204]
         run: |
           set -euo pipefail
 
           mkdir -p data
           FILE="data/weather.csv"
 
-          # Create header if file doesn't exist
+          # Create header if file doesn't exist yet
           if [ ! -f "$FILE" ]; then
             echo "Timestamp,Temperature,Humidity,Wind Speed,Wind Direction,Rain Intensity,Rain Accumulation,AQI PM2.5,AQI PM10" > "$FILE"
           fi
 
-          # Fetch JSON
+          # Fetch JSON from WeatherUnion
           JSON=$(curl -sS \
             -H "X-Zomato-Api-Key: ${WEATHERUNION_API_KEY}" \
             "https://www.weatherunion.com/gw/weather/external/v0/get_weather_data?latitude=${LATITUDE}&longitude=${LONGITUDE}")
 
-          # Convert JSON -> CSV row (uses jq, preinstalled on ubuntu-latest)
+          # IST timestamp (Asia/Kolkata)
           TS=$(TZ=Asia/Kolkata date +"%Y-%m-%dT%H:%M:%S%z")
 
+          # Optional: fail if API doesn't say status 200
+          STATUS=$(echo "$JSON" | jq -r '.status // empty')
+          if [ "$STATUS" != "200" ] && [ "$STATUS" != "200.0" ]; then
+            echo "Non-200 status in JSON: $STATUS"
+            echo "$JSON" | head -c 2000
+            exit 1
+          fi
 
-          TEMP=$(echo "$JSON" | jq -r '.data.locality_weather_data.temperature // empty')
-          HUM=$(echo "$JSON" | jq -r '.data.locality_weather_data.humidity // empty')
-          WS=$(echo "$JSON" | jq -r '.data.locality_weather_data.wind_speed // empty')
-          WD=$(echo "$JSON" | jq -r '.data.locality_weather_data.wind_direction // empty')
-          RI=$(echo "$JSON" | jq -r '.data.locality_weather_data.rain_intensity // empty')
-          RA=$(echo "$JSON" | jq -r '.data.locality_weather_data.rain_accumulation // empty')
-          PM25=$(echo "$JSON" | jq -r '.data.locality_weather_data.aqi_pm_2_point_5 // empty')
-          PM10=$(echo "$JSON" | jq -r '.data.locality_weather_data.aqi_pm_10 // empty')
+          # NOTE: fields are under .locality_weather_data (no .data wrapper)
+          TEMP=$(echo "$JSON" | jq -r '.locality_weather_data.temperature // empty')
+          HUM=$(echo "$JSON" | jq -r '.locality_weather_data.humidity // empty')
+          WS=$(echo "$JSON" | jq -r '.locality_weather_data.wind_speed // empty')
+          WD=$(echo "$JSON" | jq -r '.locality_weather_data.wind_direction // empty')
+          RI=$(echo "$JSON" | jq -r '.locality_weather_data.rain_intensity // empty')
+          RA=$(echo "$JSON" | jq -r '.locality_weather_data.rain_accumulation // empty')
+          PM25=$(echo "$JSON" | jq -r '.locality_weather_data.aqi_pm_2_point_5 // empty')
+          PM10=$(echo "$JSON" | jq -r '.locality_weather_data.aqi_pm_10 // empty')
 
-          # Basic validation: if temperature is missing, fail (prevents committing junk/HTML errors)
+          # Basic validation to avoid committing junk
           if [ -z "${TEMP:-}" ]; then
             echo "API response did not contain expected fields:"
             echo "$JSON" | head -c 2000
@@ -62,7 +70,7 @@ jobs:
         run: |
           set -e
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/weather.csv
-          git commit -m "chore: log weather $(date -u +'%Y-%m-%dT%H:%M:%SZ')" || exit 0
+          git commit -m "chore: log weather ${TS:-}" || exit 0
           git push
