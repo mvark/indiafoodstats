@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4 [web:200]
+        uses: actions/checkout@v4
 
       - name: Append weather row to CSV
         env:
