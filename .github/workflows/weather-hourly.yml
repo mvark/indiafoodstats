@@ -3,7 +3,7 @@ name: Log weather hourly (IST)
 on:
   workflow_dispatch:
   schedule:
-    - cron: "5 * * * *" # runs hourly; schedule is queued in UTC time
+    - cron: "5 * * * *" # runs hourly; schedule is in UTC
 
 permissions:
   contents: write
@@ -11,15 +11,21 @@ permissions:
 jobs:
   fetch-and-append:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: Append weather row to CSV
         env:
           LATITUDE: "17.49466643753112"
           LONGITUDE: "78.34291442883635"
-          WEATHERUNION_API_KEY: ${{ secrets.WEATHERUNION_API_KEY }} # store in Repo Settings → Secrets and variables → Actions [web:204]
+          WEATHERUNION_API_KEY: ${{ secrets.WEATHERUNION_API_KEY }}
         run: |
           set -euo pipefail
 
@@ -36,9 +42,9 @@ jobs:
             -H "X-Zomato-Api-Key: ${WEATHERUNION_API_KEY}" \
             "https://www.weatherunion.com/gw/weather/external/v0/get_weather_data?latitude=${LATITUDE}&longitude=${LONGITUDE}")
 
-          # IST timestamp (Asia/Kolkata)
+          # Timestamp in IST (Datawrapper-compatible: YYYY-MM-DD HH:MM:SS)
           TS=$(TZ=Asia/Kolkata date +"%Y-%m-%d %H:%M:%S")
-          
+
           # Optional: fail if API doesn't say status 200
           STATUS=$(echo "$JSON" | jq -r '.status // empty')
           if [ "$STATUS" != "200" ] && [ "$STATUS" != "200.0" ]; then
@@ -47,7 +53,7 @@ jobs:
             exit 1
           fi
 
-          # NOTE: fields are under .locality_weather_data (no .data wrapper)
+          # Fields are under .locality_weather_data
           TEMP=$(echo "$JSON" | jq -r '.locality_weather_data.temperature // empty')
           HUM=$(echo "$JSON" | jq -r '.locality_weather_data.humidity // empty')
           WS=$(echo "$JSON" | jq -r '.locality_weather_data.wind_speed // empty')
@@ -72,5 +78,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/weather.csv
-          git commit -m "chore: log weather ${TS:-}" || exit 0
+          git commit -m "chore: log weather" || exit 0
           git push
