@@ -37,8 +37,8 @@ jobs:
             "https://www.weatherunion.com/gw/weather/external/v0/get_weather_data?latitude=${LATITUDE}&longitude=${LONGITUDE}")
 
           # IST timestamp (Asia/Kolkata)
-          TS=$(TZ=Asia/Kolkata date +"%Y-%m-%dT%H:%M:%S%:z")
-
+          TS=$(TZ=Asia/Kolkata date +"%Y-%m-%d %H:%M:%S")
+          
           # Optional: fail if API doesn't say status 200
           STATUS=$(echo "$JSON" | jq -r '.status // empty')
           if [ "$STATUS" != "200" ] && [ "$STATUS" != "200.0" ]; then
