@@ -41,7 +41,7 @@ jobs:
             code, product_name, brands, categories, 
             "energy-kcal_100g", carbohydrates_100g, sugars_100g, fiber_100g,
             proteins_100g, fat_100g, "saturated-fat_100g", salt_100g,
-            nova_group, nutriscore_grade, url, last_modified_datetime
+            nova_group, nutriscore_grade, ingredients_text, url, last_modified_datetime
           FROM [all]
           WHERE 
             TRIM(code) <> ''
