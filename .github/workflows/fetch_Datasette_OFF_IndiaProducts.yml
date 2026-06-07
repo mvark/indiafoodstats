@@ -1,20 +1,20 @@
 name: Fetch All India Products
 
 on:
-  workflow_dispatch:  # manual trigger
+  workflow_dispatch: # manual trigger
 
 jobs:
   fetch-and-save:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # allow push to repo
+      contents: write # allow push to repo
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4   # Updated from v3
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5   # Updated from v4
         with:
           python-version: "3.x"
 
@@ -37,13 +37,13 @@ jobs:
 
           # --- SQL Query ---
           sql = """
-          SELECT 
-            code, product_name, brands, categories, 
+          SELECT
+            code, product_name, brands, categories,
             "energy-kcal_100g", carbohydrates_100g, sugars_100g, fiber_100g,
             proteins_100g, fat_100g, "saturated-fat_100g", salt_100g,
             nova_group, nutriscore_grade, ingredients_text, url, last_modified_datetime
           FROM [all]
-          WHERE 
+          WHERE
             TRIM(code) <> ''
             AND TRIM(product_name) <> ''
             AND countries_en = 'India'
@@ -64,7 +64,6 @@ jobs:
           record_count = len(df)
           csv_filename = f"all_{DATE_STR}_{record_count}.csv"
           csv_path = os.path.join("data", csv_filename)
-
           os.makedirs("data", exist_ok=True)
           df.to_csv(csv_path, index=False)
           print(f"Saved {record_count} records to {csv_path}")
@@ -80,7 +79,6 @@ jobs:
                   f.write("| Date | Record Count | File |\n")
                   f.write("|------|--------------|------|\n")
                   f.write(note)
-
           print(f"Updated {README_PATH}")
           EOF
 
