@@ -6,15 +6,18 @@ on:
 jobs:
   fetch-and-save:
     runs-on: ubuntu-latest
+    # Add this to opt-in to the new Node.js environment
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
-      contents: write # allow push to repo
+      contents: write 
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4   # Updated from v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5   # Updated from v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
@@ -68,7 +71,7 @@ jobs:
           df.to_csv(csv_path, index=False)
           print(f"Saved {record_count} records to {csv_path}")
 
-          # --- Update README.md with a markdown table ---
+          # --- Update README.md ---
           note = f"| {DATE_STR} | {record_count} | `{csv_filename}` |\n"
           if os.path.exists(README_PATH):
               with open(README_PATH, "a", encoding="utf-8") as f:
