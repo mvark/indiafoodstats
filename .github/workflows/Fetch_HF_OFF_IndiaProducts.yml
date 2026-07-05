@@ -1,10 +1,7 @@
-name: Fetch OFF India Products (HF)
+name: Fetch India Products from Hugging Face
 
 on:
   workflow_dispatch:
-
-  schedule:
-    - cron: '30 2 * * 6'   # Every Saturday 02:30 UTC
 
 permissions:
   contents: write
@@ -19,124 +16,117 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Set up Python
+    - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
 
     - name: Install packages
       run: |
-        pip install duckdb pandas pyarrow fsspec huggingface_hub
+        pip install datasets pandas huggingface_hub
 
-    - name: Fetch India products from Hugging Face
+    - name: Fetch India products
       run: |
         python << 'EOF'
 
-        import duckdb
-        import pandas as pd
+        import csv
         from pathlib import Path
         from datetime import date
+        from datasets import load_dataset
 
-        output_dir = Path("data")
-        output_dir.mkdir(exist_ok=True)
+        print("Loading streaming dataset...")
+
+        ds = load_dataset(
+            "openfoodfacts/product-database",
+            split="food",
+            streaming=True
+        )
+
+        outdir = Path("data")
+        outdir.mkdir(exist_ok=True)
 
         today = date.today().isoformat()
 
-        outfile = output_dir / f"all_{today}.csv"
-        latest = output_dir / "all_latest.csv"
+        outfile = outdir / f"all_{today}.csv"
+        latest = outdir / "all_latest.csv"
 
-        con = duckdb.connect()
+        header = [
+            "code",
+            "product_name",
+            "brands",
+            "categories",
+            "quantity",
+            "nova_group",
+            "nutriscore_grade",
+            "creator",
+            "last_modified_t"
+        ]
 
-        print("Downloading/filtering Open Food Facts...")
+        count = 0
 
-        query = """
-        SELECT
+        with open(outfile, "w", newline="", encoding="utf-8") as f:
 
-            code,
-            url,
-            creator,
-            created_datetime,
-            last_modified_datetime,
-            product_name,
-            abbreviated_product_name,
-            quantity,
-            packaging,
-            brands,
-            brands_tags,
-            categories,
-            categories_tags,
-            categories_en,
-            countries,
-            countries_tags,
-            countries_en,
-            ingredients_text,
-            allergens_en,
-            serving_size,
-            additives_n,
-            additives_tags,
-            additives_en,
-            nutriscore_grade,
-            nova_group,
-            pnns_groups_1,
-            pnns_groups_2,
-            food_groups_en,
-            brand_owner,
-            unique_scans_n,
-            completeness,
-            last_image_datetime,
+            writer = csv.writer(f)
+            writer.writerow(header)
 
-            image_url,
-            image_small_url,
-            image_ingredients_url,
-            image_nutrition_url,
+            for row in ds:
 
-            "energy-kcal_100g",
-            carbohydrates_100g,
-            sugars_100g,
-            fiber_100g,
-            proteins_100g,
-            fat_100g,
-            "saturated-fat_100g",
-            salt_100g
+                countries = row.get("countries_tags") or []
 
-        FROM read_parquet(
-          'hf://datasets/openfoodfacts/product-database/food.parquet'
-        )
+                if "en:india" not in countries:
+                    continue
 
-        WHERE countries_en='India'
-        """
+                product_name = row.get("product_name")
 
-        df = con.execute(query).fetch_df()
+                if isinstance(product_name, list):
+                    product_name = "; ".join(str(x) for x in product_name)
 
-        print(f"Fetched {len(df):,} India products")
+                writer.writerow([
+                    row.get("code", ""),
+                    product_name,
+                    row.get("brands", ""),
+                    row.get("categories", ""),
+                    row.get("quantity", ""),
+                    row.get("nova_group", ""),
+                    row.get("nutriscore_grade", ""),
+                    row.get("creator", ""),
+                    row.get("last_modified_t", "")
+                ])
 
-        df.to_csv(outfile, index=False)
-        df.to_csv(latest, index=False)
+                count += 1
 
-        print("CSV files written.")
+                if count % 500 == 0:
+                    print(f"Written {count:,} India products")
+
+        import shutil
+        shutil.copy(outfile, latest)
+
+        print(f"Done. {count:,} India products written.")
 
         EOF
 
-    - name: Commit changes
+    - name: Commit if changed
       run: |
-
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
 
-        git add data/
+        git add data
 
         if git diff --cached --quiet; then
-          echo "No changes."
+          echo "No changes"
           exit 0
         fi
 
-        git commit -m "Fetched India products on $(date +%F)"
+        git commit -m "Updated India products $(date +%F)"
 
-    - name: Rebase and Push
+    - name: Pull latest
       run: |
         git pull --rebase origin main
+
+    - name: Push
+      run: |
         git push
