@@ -1,97 +1,142 @@
-name: Fetch India Products from Hugging Face
+name: Fetch OFF India Products (HF)
 
 on:
-  workflow_dispatch:  # manual trigger
+  workflow_dispatch:
+
+  schedule:
+    - cron: '30 2 * * 6'   # Every Saturday 02:30 UTC
+
+permissions:
+  contents: write
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+    - name: Checkout repository
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
 
-      - name: Install dependencies
-        run: |
-          pip install datasets pyarrow pandas
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
 
-      - name: Fetch, filter, and save India products
-        run: |
-          python - <<EOF
-          from datasets import load_dataset
-          import pandas as pd
-          from pathlib import Path
+    - name: Install packages
+      run: |
+        pip install duckdb pandas pyarrow fsspec huggingface_hub
 
-          # Config
-          DATASET_NAME = "openfoodfacts/product-database"
-          SPLIT = "food"
-          OUTPUT_FILE = Path("data/india_products.csv")
-          CHUNK_SIZE = 5000
+    - name: Fetch India products from Hugging Face
+      run: |
+        python << 'EOF'
 
-          OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        import duckdb
+        import pandas as pd
+        from pathlib import Path
+        from datetime import date
 
-          # Filter function
-          def is_valid(record):
-              code = (record.get("code") or "").strip()
-              name = (record.get("product_name") or "").strip()
-              country = record.get("countries_en")
-              return code != "" and name != "" and country == "India"
+        output_dir = Path("data")
+        output_dir.mkdir(exist_ok=True)
 
-          # Fields to extract
-          FIELDS = [
-              "code", "product_name", "brands", "categories",
-              "energy-kcal_100g", "carbohydrates_100g", "sugars_100g", "fiber_100g",
-              "proteins_100g", "fat_100g", "saturated-fat_100g", "salt_100g",
-              "nova_group", "nutriscore_grade", "ingredients_text",
-              "last_modified_datetime", "url"
-          ]
+        today = date.today().isoformat()
 
-          # Stream and process
-          ds = load_dataset(DATASET_NAME, split=SPLIT, streaming=True)
-          filtered = ds.filter(is_valid)
+        outfile = output_dir / f"all_{today}.csv"
+        latest = output_dir / "all_latest.csv"
 
-          header_written = False
-          chunk = []
+        con = duckdb.connect()
 
-          print("Streaming and filtering India products...")
+        print("Downloading/filtering Open Food Facts...")
 
-          for record in filtered:
-              selected = {k: record.get(k) for k in FIELDS}
-              chunk.append(selected)
+        query = """
+        SELECT
 
-              if len(chunk) >= CHUNK_SIZE:
-                  df = pd.DataFrame(chunk)
-                  mode = "a" if header_written else "w"
-                  df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
-                  header_written = True
-                  chunk = []
-                  print(f"Saved chunk of {CHUNK_SIZE} rows")
+            code,
+            url,
+            creator,
+            created_datetime,
+            last_modified_datetime,
+            product_name,
+            abbreviated_product_name,
+            quantity,
+            packaging,
+            brands,
+            brands_tags,
+            categories,
+            categories_tags,
+            categories_en,
+            countries,
+            countries_tags,
+            countries_en,
+            ingredients_text,
+            allergens_en,
+            serving_size,
+            additives_n,
+            additives_tags,
+            additives_en,
+            nutriscore_grade,
+            nova_group,
+            pnns_groups_1,
+            pnns_groups_2,
+            food_groups_en,
+            brand_owner,
+            unique_scans_n,
+            completeness,
+            last_image_datetime,
 
-          # Final chunk
-          if chunk:
-              df = pd.DataFrame(chunk)
-              mode = "a" if header_written else "w"
-              df.to_csv(OUTPUT_FILE, mode=mode, header=not header_written, index=False)
-              print(f"Final chunk saved: {len(chunk)} rows")
+            image_url,
+            image_small_url,
+            image_ingredients_url,
+            image_nutrition_url,
 
-          print(f"Done! Output: {OUTPUT_FILE}")
-          EOF
+            "energy-kcal_100g",
+            carbohydrates_100g,
+            sugars_100g,
+            fiber_100g,
+            proteins_100g,
+            fat_100g,
+            "saturated-fat_100g",
+            salt_100g
 
-      - name: Commit and push if changed
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add data/india_products.csv
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update India products from Hugging Face [skip ci]"
-            git push
-          fi
+        FROM read_parquet(
+          'hf://datasets/openfoodfacts/product-database/food.parquet'
+        )
+
+        WHERE countries_en='India'
+        """
+
+        df = con.execute(query).fetch_df()
+
+        print(f"Fetched {len(df):,} India products")
+
+        df.to_csv(outfile, index=False)
+        df.to_csv(latest, index=False)
+
+        print("CSV files written.")
+
+        EOF
+
+    - name: Commit changes
+      run: |
+
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+
+        git add data/
+
+        if git diff --cached --quiet; then
+          echo "No changes."
+          exit 0
+        fi
+
+        git commit -m "Fetched India products on $(date +%F)"
+
+    - name: Rebase and Push
+      run: |
+        git pull --rebase origin main
+        git push
