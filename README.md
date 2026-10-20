@@ -1,6 +1,3 @@
-# indiafoodstats
-Food, Science, Data
+# indiafoodstats - Food, Science, Data
 
-**Last updated for `amul`**: 2025-08-07
-
-**Last updated for `Milky Mist`**: 2025-08-09
+You can find more of my work on [India Food Stats](indiafoodstats.blogspot.com/), my blog exploring food and nutrition data in India.
